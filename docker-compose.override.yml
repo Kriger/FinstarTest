@@ -1,0 +1,15 @@
+services:
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        BUILD_CONFIGURATION: Debug
+    volumes:
+      - ./src/TaskManagement.Api:/app/src/TaskManagement.Api
+      - ./src/TaskManagement.Application:/app/src/TaskManagement.Application
+      - ./src/TaskManagement.Domain:/app/src/TaskManagement.Domain
+      - ./src/TaskManagement.Infrastructure:/app/src/TaskManagement.Infrastructure
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ASPNETCORE_URLS=http://+:8080

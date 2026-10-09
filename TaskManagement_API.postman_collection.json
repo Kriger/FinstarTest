@@ -1,0 +1,255 @@
+{
+	"info": {
+		"_postman_id": "task-management-api-collection",
+		"name": "Task Management API",
+		"description": "REST API для управления задачами с архитектурой Clean Architecture",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"version": "1.0.0"
+	},
+	"variable": [
+		{
+			"key": "baseUrl",
+			"value": "http://localhost:5292",
+			"type": "string"
+		},
+		{
+			"key": "taskId",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "userId",
+			"value": "550e8400-e29b-41d4-a716-446655440000",
+			"type": "string",
+			"description": "ID пользователя (заголовок X-User-Id). Меняйте для проверки createdBy/updatedBy"
+		}
+	],
+	"item": [
+		{
+			"name": "Health Check",
+			"item": [
+				{
+					"name": "Get Health Status",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/health",
+							"host": ["{{baseUrl}}"],
+							"path": ["health"]
+						},
+						"description": "Проверка здоровья сервиса. Возвращает 200 OK если PostgreSQL и RabbitMQ доступны."
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Tasks",
+			"item": [
+				{
+					"name": "Create Task",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 201) {",
+									"    var jsonData = pm.response.json();",
+									"    pm.collectionVariables.set(\"taskId\", jsonData.id);",
+									"    console.log(\"Task ID saved: \" + jsonData.id);",
+									"    console.log(\"createdBy: \" + jsonData.createdBy);",
+									"    console.log(\"updatedBy: \" + jsonData.updatedBy);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "X-User-Id",
+								"value": "{{userId}}",
+								"description": "ID пользователя, создающего задачу"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"title\": \"My Task\",\n    \"description\": \"Task description\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/task",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "task"]
+						},
+						"description": "Создание новой задачи. Возвращает 201 Created с данными задачи."
+					},
+					"response": []
+				},
+				{
+					"name": "Get All Tasks",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/task?page=1&pageSize=20",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "task"],
+							"query": [
+								{
+									"key": "page",
+									"value": "1",
+									"description": "Номер страницы"
+								},
+								{
+									"key": "pageSize",
+									"value": "20",
+									"description": "Размер страницы (макс. 100)"
+								}
+							]
+						},
+						"description": "Получение всех задач с пагинацией."
+					},
+					"response": []
+				},
+				{
+					"name": "Get Task by ID",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/task/{{taskId}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "task", "{{taskId}}"]
+						},
+						"description": "Получение задачи по уникальному идентификатору. Возвращает 404 если не найдена."
+					},
+					"response": []
+				},
+				{
+					"name": "Update Task",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 200) {",
+									"    var jsonData = pm.response.json();",
+									"    console.log(\"updatedBy: \" + jsonData.updatedBy);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "X-User-Id",
+								"value": "{{userId}}",
+								"description": "ID пользователя, обновляющего задачу"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"title\": \"Updated Title\",\n    \"description\": \"Updated description\",\n    \"status\": 1\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/task/{{taskId}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "task", "{{taskId}}"]
+						},
+						"description": "Обновление задачи. Статус: 0=New, 1=InProgress, 2=Completed. Возвращает 409 при конфликте оптимистичной блокировки."
+					},
+					"response": []
+				},
+				{
+					"name": "Delete Task",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "X-User-Id",
+								"value": "{{userId}}",
+								"description": "ID пользователя, удаляющего задачу"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/task/{{taskId}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "task", "{{taskId}}"]
+						},
+						"description": "Удаление задачи (soft delete). Возвращает 204 No Content."
+					},
+					"response": []
+				},
+				{
+					"name": "Search Tasks",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/task/search?status=New&searchTitle=Task&page=1&pageSize=10",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "task", "search"],
+							"query": [
+								{
+									"key": "status",
+									"value": "New",
+									"description": "Фильтр по статусу: New, InProgress, Completed",
+									"disabled": true
+								},
+								{
+									"key": "searchTitle",
+									"value": "Task",
+									"description": "Поиск по подстроке в заголовке",
+									"disabled": true
+								},
+								{
+									"key": "page",
+									"value": "1"
+								},
+								{
+									"key": "pageSize",
+									"value": "10"
+								}
+							]
+						},
+						"description": "Поиск задач с фильтрацией и пагинацией."
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Swagger UI",
+			"item": [
+				{
+					"name": "Open Swagger",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/swagger",
+							"host": ["{{baseUrl}}"],
+							"path": ["swagger"]
+						},
+						"description": "Интерфейс Swagger UI для взаимодействия с API."
+					},
+					"response": []
+				}
+			]
+		}
+	]
+}

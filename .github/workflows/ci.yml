@@ -1,0 +1,65 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: taskmanagement
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+      rabbitmq:
+        image: rabbitmq:3-management
+        ports:
+          - 5672:5672
+          - 15672:15672
+        options: >-
+          --health-cmd "rabbitmq-diagnostics check_port_connectivity"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: '8.0.x'
+
+    - name: Restore dependencies
+      run: dotnet restore FinstarTest.sln
+
+    - name: Build
+      run: dotnet build --no-restore FinstarTest.sln
+
+    - name: Test
+      run: dotnet test --no-build --verbosity normal FinstarTest.sln
+      env:
+        ConnectionStrings__DefaultConnection: Host=localhost;Port=5432;Database=taskmanagement;Username=postgres;Password=postgres
+        ConnectionStrings__RabbitMq: amqp://guest:guest@localhost:5672
+
+    - name: Publish
+      if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+      run: dotnet publish src/TaskManagement.Api/TaskManagement.Api.csproj -c Release -o publish
+
+    - name: Docker build
+      if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+      run: docker build -t taskmanagement-api .

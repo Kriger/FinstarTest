@@ -1,0 +1,59 @@
+# .NET
+bin/
+**/bin/
+**/obj/
+*.user
+*.suo
+*.sln.user
+*.cache
+*.log
+*.runsettings
+
+# IDE
+.vs/
+.vscode/
+*.swp
+*~
+.idea/
+*.iml
+*.dotSettings
+*.ReSharperUser
+
+# Build results
+[Dd]ebug/
+[Dd]ebugPublic/
+[Rr]elease/
+[Rr]eleases/
+x64/
+x86/
+build/
+publish/
+*.publish.tlog
+
+# Test results
+TestResults/
+[Bb]uild/[Ll]og*
+*.nunit*
+coverage*.json
+coverage*.xml
+
+# Docker
+*.pidfile
+
+# Secrets
+*.env
+appsettings.Development.json
+appsettings.Local.json
+
+# OS
+.DS_Store
+Thumbs.db
+
+# NuGet
+nuget.config
+*.nupkg
+**/packages/*
+packages.config
+
+# Logs
+logs/
